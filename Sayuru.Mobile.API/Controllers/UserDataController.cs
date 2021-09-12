@@ -243,28 +243,31 @@ namespace Sayuru.Mobile.API.Controllers
                 }
 
                 var userUpdate = Builders<UserData>.Update
-                    .Set(u => u.FirstName, userData.FirstName)
-                    .Set(u => u.LastName, userData.LastName)
-                    .Set(u => u.PreferedLanguage, userData.PreferedLanguage)
-                    .Set(u => u.EmergencyContact, userData.EmergencyContact)
-                    .Set(u => u.Zones, userData.Zones)
-                    .Set(u => u.BirthDate, userData.BirthDate)
-                    .Set(u => u.ProfilePicture, userData.ProfilePicture)
-                    .Set(u => u.District, userData.District);
+                    .Set(u => u.FirstName, string.IsNullOrEmpty(userData.FirstName) ? data.FirstName : userData.FirstName)
+                    .Set(u => u.LastName, string.IsNullOrEmpty(userData.LastName) ? data.LastName : userData.LastName)
+                    .Set(u => u.Nic, string.IsNullOrEmpty(userData.Nic) ? data.LastName : userData.Nic)
+                    .Set(u => u.PreferedLanguage, (int)userData.PreferedLanguage == 0 ? data.PreferedLanguage : userData.PreferedLanguage)
+                    .Set(u => u.EmergencyContact, userData.EmergencyContact == 0 ? data.EmergencyContact : userData.EmergencyContact)
+                    .Set(u => u.Zones, userData.Zones.Count() == 0 ? data.Zones : userData.Zones)
+                    .Set(u => u.BirthDate, string.IsNullOrEmpty(userData.BirthDate) ? data.BirthDate : userData.BirthDate)
+                    .Set(u => u.ProfilePicture, string.IsNullOrEmpty(userData.ProfilePicture) ? data.ProfilePicture : userData.ProfilePicture)
+                    .Set(u => u.District, userData.District.Id != 0 ? data.District : userData.District)
+                    .Set(u => u.IsActive, true);
+                _dbContext.UserData.UpdateOne(theFilter, userUpdate);
 
-                if (!data.IsActive)
+                if (!data.IsActive || string.IsNullOrEmpty(data.FishermanID))
                 {
-                    var fisherman = _ivrAPI.GetFishermanData(userData.Nic);
+                    var fisherman = _ivrAPI.GetFishermanData(userData.Nic ?? data.Nic);
 
                     if (fisherman != null)
                     {
-                        data.FishermanID = fisherman.FishermanID;
-                        data.Address = fisherman.Address;
-                        data.FishermanLicenseStatus = fisherman.Active_status;
-                        userUpdate.Set(u => u.FishermanID, data.FishermanID);
-                        userUpdate.Set(u => u.Address, data.Address);
-                        userUpdate.Set(u => u.FishermanLicenseStatus, data.FishermanLicenseStatus);
-                        
+                        var userFishermanUpdate = Builders<UserData>.Update
+                            .Set(u => u.FishermanID, fisherman.FishermanID)
+                            .Set(u => u.Address, fisherman.Address)
+                            .Set(u => u.FishermanLicenseStatus, fisherman.Active_status);
+
+                        _dbContext.UserData.UpdateOne(theFilter, userFishermanUpdate);
+
                     }
                     //else // TODO: Add this if user can use app without fisherman ID
                     //{
@@ -276,21 +279,6 @@ namespace Sayuru.Mobile.API.Controllers
                     //    };
                     //}
                 }
-                else if (string.IsNullOrEmpty(data.FishermanID)) // silently update fisherman ID if firstime failed
-                {
-                    var fisherman = _ivrAPI.GetFishermanData(data.Nic);
-
-                    if (fisherman != null)
-                    {
-                        data.FishermanID = fisherman.FishermanID;
-                        userUpdate.Set(u => u.FishermanID, data.FishermanID);
-                        userUpdate.Set(u => u.Address, data.Address);
-                        userUpdate.Set(u => u.FishermanLicenseStatus, data.FishermanLicenseStatus);
-                    }
-                }
-
-                userUpdate.Set(u => u.IsActive, true);
-                _dbContext.UserData.UpdateOne(theFilter, userUpdate);
                 
                 return new Response<UserData> { Data = GetUserByMobileNumber(data.MobileNumber).Data };
             }
@@ -345,7 +333,7 @@ namespace Sayuru.Mobile.API.Controllers
             try
             {
                 var theFilter = Builders<UserLocations>.Filter.Eq(user => user.UserId, userid);
-                var data = _dbContext.UserLocations.FindSync<UserLocations>(theFilter).ToList().OrderByDescending(c => c.CreatedTimeStamp).ToList();
+                var data = _dbContext.UserLocations.FindSync<UserLocations>(theFilter).ToList();
 
                 if (data == null)
                 {
@@ -413,7 +401,7 @@ namespace Sayuru.Mobile.API.Controllers
             try
             {
                 var theFilter = Builders<UserRoutes>.Filter.Eq(user => user.UserId, userid);
-                var data = _dbContext.UserRoutes.FindSync<UserRoutes>(theFilter).ToList().OrderByDescending(c => c.CreatedTimeStamp).ToList();
+                var data = _dbContext.UserRoutes.FindSync<UserRoutes>(theFilter).ToList();
 
                 if (data == null)
                 {
