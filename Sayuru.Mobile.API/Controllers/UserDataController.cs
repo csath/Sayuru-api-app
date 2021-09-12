@@ -251,7 +251,7 @@ namespace Sayuru.Mobile.API.Controllers
                     .Set(u => u.Zones, userData.Zones.Count() == 0 ? data.Zones : userData.Zones)
                     .Set(u => u.BirthDate, string.IsNullOrEmpty(userData.BirthDate) ? data.BirthDate : userData.BirthDate)
                     .Set(u => u.ProfilePicture, string.IsNullOrEmpty(userData.ProfilePicture) ? data.ProfilePicture : userData.ProfilePicture)
-                    .Set(u => u.District, userData.District.Id != 0 ? data.District : userData.District)
+                    .Set(u => u.District, userData.District.Id == 0 ? data.District : userData.District)
                     .Set(u => u.IsActive, true);
                 _dbContext.UserData.UpdateOne(theFilter, userUpdate);
 
