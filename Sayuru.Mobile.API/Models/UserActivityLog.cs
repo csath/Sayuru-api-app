@@ -1,9 +1,10 @@
-﻿using Sayuru.Mobile.API.Data.Common;
+﻿
 using System;
 using System.Collections.Generic;
 using System.Text;
+using Sayuru.Mobile.API.Common;
 
-namespace Sayuru.Mobile.API.Data.Models
+namespace Sayuru.Mobile.API.Models
 {
     public class UserActivityLog : MongoEntity
     {

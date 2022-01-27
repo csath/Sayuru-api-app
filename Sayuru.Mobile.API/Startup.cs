@@ -12,9 +12,8 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Microsoft.OpenApi.Models;
-using Sayuru.Mobile.API.Data;
-using Sayuru.Mobile.API.Data.Interfaces;
-using Sayuru.Mobile.API.Data.Settings;
+using Sayuru.Mobile.API.Interfaces;
+using Sayuru.Mobile.API.Settings;
 using Sayuru.Mobile.API.Filters;
 using Sayuru.Mobile.API.Helpers;
 
@@ -65,7 +64,6 @@ namespace Sayuru.Mobile.API
                 });
             });
 
-
             services.Configure<DatabaseSettings>(Configuration.GetSection(nameof(DatabaseSettings)));
             services.Configure<ApplicationSettings>(Configuration.GetSection(nameof(ApplicationSettings)));
             services.AddSingleton<IDatabaseSettings>(x => x.GetRequiredService<IOptions<DatabaseSettings>>().Value);
@@ -75,6 +73,7 @@ namespace Sayuru.Mobile.API
             services.AddSingleton<IVRApi>();
             services.AddSingleton<PushNotificationHelper>();
             services.AddSingleton<SMSHelper>();
+            services.AddSingleton<CertificateAuthentication>();
 
             services.AddControllers();
 

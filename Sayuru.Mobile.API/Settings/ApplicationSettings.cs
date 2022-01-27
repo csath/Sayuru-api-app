@@ -1,9 +1,9 @@
-﻿using Sayuru.Mobile.API.Data.Interfaces;
+﻿using Sayuru.Mobile.API.Interfaces;
 using System;
 using System.Collections.Generic;
 using System.Text;
 
-namespace Sayuru.Mobile.API.Data.Settings
+namespace Sayuru.Mobile.API.Settings
 {
     public class ApplicationSettings : IApplicationSettings
     {
@@ -17,5 +17,6 @@ namespace Sayuru.Mobile.API.Data.Settings
         public string FishermanAPIPassword { get; set; }
         public string SMSBaseURL { get; set; }
         public string SMSAPIKey { get; set; }
+        public string AllowedCertificateThumbPrints { get; set; }
     }
 }

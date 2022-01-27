@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Text;
 
-namespace Sayuru.Mobile.API.Data.Interfaces
+namespace Sayuru.Mobile.API.Interfaces
 {
     public interface IApplicationSettings
     {
@@ -16,5 +16,6 @@ namespace Sayuru.Mobile.API.Data.Interfaces
         string FishermanAPIPassword { get; set; }
         string SMSBaseURL { get; set; }
         string SMSAPIKey { get; set; }
+        string AllowedCertificateThumbPrints { get; set; }
     }
 }

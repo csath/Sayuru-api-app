@@ -7,9 +7,9 @@ using MongoDB.Bson;
 using MongoDB.Driver;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
-using Sayuru.Mobile.API.Data.Common;
-using Sayuru.Mobile.API.Data.Interfaces;
-using Sayuru.Mobile.API.Data.Models;
+using Sayuru.Mobile.API.Common;
+using Sayuru.Mobile.API.Interfaces;
+using Sayuru.Mobile.API.Models;
 using Sayuru.Mobile.API.Helpers;
 
 namespace Sayuru.Mobile.API.Controllers
@@ -25,8 +25,9 @@ namespace Sayuru.Mobile.API.Controllers
         SMSHelper _sMSHelper;
         JsonSerializerSettings _serializerSettings;
         PushNotificationHelper _pushNotificationHelper;
+        CertificateAuthentication _certificateAuthentication;
 
-        public UserDataController(IApplicationSettings settings, IDBContext dbContext, Logger logger, IVRApi ivrAPI, SMSHelper sMSHelper, PushNotificationHelper pushNotificationHelper)
+        public UserDataController(IApplicationSettings settings, IDBContext dbContext, Logger logger, IVRApi ivrAPI, SMSHelper sMSHelper, PushNotificationHelper pushNotificationHelper, CertificateAuthentication certificateAuthentication)
         {
             _settings = settings;
             _dbContext = dbContext;
@@ -34,6 +35,7 @@ namespace Sayuru.Mobile.API.Controllers
             _ivrAPI = ivrAPI;
             _sMSHelper = sMSHelper;
             _pushNotificationHelper = pushNotificationHelper;
+            _certificateAuthentication = certificateAuthentication;
 
             _serializerSettings = new JsonSerializerSettings
             {
@@ -44,8 +46,8 @@ namespace Sayuru.Mobile.API.Controllers
         [HttpPost("login")]
         public Response<UserData> SendOtp([FromBody] UserData userData)
         {
-            //int otp = _ivrAPI.SendOtp(userData.MobileNumber);
-            int otp = _sMSHelper.SendOTP(userData.MobileNumber);
+            int otp = _ivrAPI.SendOtp(userData.MobileNumber);
+            //int otp = _sMSHelper.SendOTP(userData.MobileNumber);
 
             if (otp == 0)
             {
@@ -121,6 +123,8 @@ namespace Sayuru.Mobile.API.Controllers
 
                         _dbContext.UserData.InsertOne(userData);
 
+                        userData.UserToken = _certificateAuthentication.GenerateUserToken(userData.Id);
+
                         return new Response<UserData> { Data = userData };
                     }
                     catch (Exception ex)
@@ -146,6 +150,8 @@ namespace Sayuru.Mobile.API.Controllers
                         _dbContext.UserData.UpdateOne(theFilter1, userUpdate);
                     }
 
+                    dataUser.UserToken = _certificateAuthentication.GenerateUserToken(dataUser.Id);
+
                     return new Response<UserData>
                     {
                         Data = dataUser
@@ -165,10 +171,20 @@ namespace Sayuru.Mobile.API.Controllers
         }
 
         [HttpPost("user/registerForIVR")]
-        public Response<UserData> ActivateIVR([FromBody] UserData userData)
+        public Response<UserData> ActivateIVR([FromBody] UserData userData, [FromHeader] string userToken)
         {
             try
             {
+                if (!_certificateAuthentication.CheckIfUserTokenIsValid(userData.Id, userToken))
+                {
+                    return new Response<UserData>
+                    {
+                        IsSuccess = false,
+                        Code = 401,
+                        Error = "No access to edit user record"
+                    };
+                }
+
                 var theFilter = Builders<UserData>.Filter.Where(user => user.Id == userData.Id);
                 var data = _dbContext.UserData.FindSync<UserData>(theFilter).FirstOrDefault();
 
@@ -199,7 +215,7 @@ namespace Sayuru.Mobile.API.Controllers
 
                 _dbContext.UserData.UpdateOne(theFilter, userUpdate);
 
-                return new Response<UserData> { Data = GetUserByMobileNumber(data.MobileNumber).Data };
+                return new Response<UserData> { Data = GetUserById(data.Id, userToken).Data };
             }
 
             catch (Exception ex)
@@ -215,10 +231,20 @@ namespace Sayuru.Mobile.API.Controllers
         }
 
         [HttpPost("user/update")]
-        public Response<UserData> UpdateUser([FromBody] UserData userData)
+        public Response<UserData> UpdateUser([FromBody] UserData userData, [FromHeader] string userToken)
         {
             try
             {
+                if (!_certificateAuthentication.CheckIfUserTokenIsValid(userData.Id, userToken))
+                {
+                    return new Response<UserData>
+                    {
+                        IsSuccess = false,
+                        Code = 401,
+                        Error = "No access to edit user record"
+                    };
+                }
+
                 var theFilter = Builders<UserData>.Filter.Where(user => user.Id == userData.Id);
                 var data = _dbContext.UserData.FindSync<UserData>(theFilter).FirstOrDefault();
 
@@ -280,7 +306,7 @@ namespace Sayuru.Mobile.API.Controllers
                     //}
                 }
                 
-                return new Response<UserData> { Data = GetUserByMobileNumber(data.MobileNumber).Data };
+                return new Response<UserData> { Data = GetUserById(data.Id, userToken).Data };
             }
 
             catch (Exception ex)
@@ -295,12 +321,22 @@ namespace Sayuru.Mobile.API.Controllers
             }
         }
 
-        [HttpGet("user/{mobileNumber}")]
-        public Response<UserData> GetUserByMobileNumber(long mobileNumber)
+        [HttpGet("user/{userid}")]
+        public Response<UserData> GetUserById(string userid, [FromHeader] string userToken)
         {
             try
             {
-                var theFilter = Builders<UserData>.Filter.Eq(user => user.MobileNumber, mobileNumber);
+                if (!_certificateAuthentication.CheckIfUserTokenIsValid(userid, userToken))
+                {
+                    return new Response<UserData>
+                    {
+                        IsSuccess = false,
+                        Code = 401,
+                        Error = "No access"
+                    };
+                }
+
+                var theFilter = Builders<UserData>.Filter.Eq(user => user.Id, userid);
                 var data = _dbContext.UserData.FindSync<UserData>(theFilter).FirstOrDefault();
 
                 if (data == null)
@@ -312,6 +348,8 @@ namespace Sayuru.Mobile.API.Controllers
                         Error = "No User found for the given Id"
                     };
                 }
+
+                data.UserToken = _certificateAuthentication.GenerateUserToken(userid);
 
                 return new Response<UserData> { Data = data };
             }
@@ -328,10 +366,20 @@ namespace Sayuru.Mobile.API.Controllers
         }
 
         [HttpGet("points")]
-        public Response<List<UserLocations>> GetPoints([FromQuery]string userid)
+        public Response<List<UserLocations>> GetPoints([FromQuery]string userid, [FromHeader] string userToken)
         {
             try
             {
+                if (!_certificateAuthentication.CheckIfUserTokenIsValid(userid, userToken))
+                {
+                    return new Response<List<UserLocations>>
+                    {
+                        IsSuccess = false,
+                        Code = 401,
+                        Error = "No access"
+                    };
+                }
+
                 var theFilter = Builders<UserLocations>.Filter.Eq(user => user.UserId, userid);
                 var data = _dbContext.UserLocations.FindSync<UserLocations>(theFilter).ToList();
 
@@ -360,10 +408,20 @@ namespace Sayuru.Mobile.API.Controllers
         }
 
         [HttpPost("points/{userid}")]
-        public Response<long> UpdatePoints([FromBody] List<UserLocations> points, [FromRoute] string userid)
+        public Response<long> UpdatePoints([FromBody] List<UserLocations> points, [FromRoute] string userid, [FromHeader] string userToken)
         {
             try
             {
+                if (!_certificateAuthentication.CheckIfUserTokenIsValid(userid, userToken))
+                {
+                    return new Response<long>
+                    {
+                        IsSuccess = false,
+                        Code = 401,
+                        Error = "No access"
+                    };
+                }
+
                 points.ForEach(e =>
                 {
                     var filter = Builders<UserLocations>.Filter.Eq(point => point.CreatedTimeStamp, e.CreatedTimeStamp);
@@ -377,7 +435,7 @@ namespace Sayuru.Mobile.API.Controllers
                     _dbContext.UserLocations.UpdateOne(filter, update, options);
                 });
 
-                var res = GetPoints(userid);
+                var res = GetPoints(userid, userToken);
                 return new Response<long>
                 {
                     Data = (long)(res?.Data?.FirstOrDefault()?.CreatedTimeStamp)
@@ -396,10 +454,20 @@ namespace Sayuru.Mobile.API.Controllers
         }
 
         [HttpGet("routes")]
-        public Response<List<UserRoutes>> GetRoutes([FromQuery] string userid)
+        public Response<List<UserRoutes>> GetRoutes([FromQuery] string userid, [FromHeader] string userToken)
         {
             try
             {
+                if (!_certificateAuthentication.CheckIfUserTokenIsValid(userid, userToken))
+                {
+                    return new Response<List<UserRoutes>>
+                    {
+                        IsSuccess = false,
+                        Code = 401,
+                        Error = "No access"
+                    };
+                }
+
                 var theFilter = Builders<UserRoutes>.Filter.Eq(user => user.UserId, userid);
                 var data = _dbContext.UserRoutes.FindSync<UserRoutes>(theFilter).ToList();
 
@@ -428,10 +496,20 @@ namespace Sayuru.Mobile.API.Controllers
         }
 
         [HttpPost("routes/{userid}")]
-        public Response<long> UpdateRoutes([FromBody] List<UserRoutes> points, [FromRoute] string userid)
+        public Response<long> UpdateRoutes([FromBody] List<UserRoutes> points, [FromRoute] string userid, [FromHeader] string userToken)
         {
             try
             {
+                if (!_certificateAuthentication.CheckIfUserTokenIsValid(userid, userToken))
+                {
+                    return new Response<long>
+                    {
+                        IsSuccess = false,
+                        Code = 401,
+                        Error = "No access"
+                    };
+                }
+
                 points.ForEach(e =>
                 {
                     var filter = Builders<UserRoutes>.Filter.Eq(point => point.CreatedTimeStamp, e.CreatedTimeStamp);
@@ -447,7 +525,7 @@ namespace Sayuru.Mobile.API.Controllers
                     _dbContext.UserRoutes.UpdateOne(filter, update, options);
                 });
 
-                var res = GetRoutes(userid);
+                var res = GetRoutes(userid, userToken);
                 return new Response<long>
                 {
                     Data = (long)(res?.Data?.FirstOrDefault()?.CreatedTimeStamp)
@@ -466,10 +544,20 @@ namespace Sayuru.Mobile.API.Controllers
         }
 
         [HttpGet("activitylog")]
-        public Response<List<UserActivityLog>> GetActivityLog([FromQuery] string userid)
+        public Response<List<UserActivityLog>> GetActivityLog([FromQuery] string userid, [FromHeader] string userToken)
         {
             try
             {
+                if (!_certificateAuthentication.CheckIfUserTokenIsValid(userid, userToken))
+                {
+                    return new Response<List<UserActivityLog>>
+                    {
+                        IsSuccess = false,
+                        Code = 401,
+                        Error = "No access"
+                    };
+                }
+
                 var theFilter = Builders<UserActivityLog>.Filter.Eq(user => user.UserId, userid);
                 var data = _dbContext.UserActivityLog.FindSync<UserActivityLog>(theFilter).ToList().OrderByDescending(c => c.CreatedTimeStamp).ToList();
 
@@ -498,10 +586,20 @@ namespace Sayuru.Mobile.API.Controllers
         }
 
         [HttpPost("activitylog/{userid}")]
-        public Response<long> UpdateActivityLog([FromBody] List<UserActivityLog> points, [FromRoute] string userid)
+        public Response<long> UpdateActivityLog([FromBody] List<UserActivityLog> points, [FromRoute] string userid, [FromHeader] string userToken)
         {
             try
             {
+                if (!_certificateAuthentication.CheckIfUserTokenIsValid(userid, userToken))
+                {
+                    return new Response<long>
+                    {
+                        IsSuccess = false,
+                        Code = 401,
+                        Error = "No access"
+                    };
+                }
+
                 points.ForEach(e =>
                 {
                     var filter = Builders<UserActivityLog>.Filter.Eq(point => point.CreatedTimeStamp, e.CreatedTimeStamp);
@@ -514,7 +612,7 @@ namespace Sayuru.Mobile.API.Controllers
                     _dbContext.UserActivityLog.UpdateOne(filter, update, options);
                 });
 
-                var res = GetActivityLog(userid);
+                var res = GetActivityLog(userid, userToken);
                 return new Response<long>
                 {
                     Data = (long)(res?.Data?.FirstOrDefault()?.CreatedTimeStamp)
@@ -533,10 +631,20 @@ namespace Sayuru.Mobile.API.Controllers
         }
 
         [HttpGet("alerts")]
-        public Response<List<UserAlerts>> GetAlerts([FromQuery] string userid)
+        public Response<List<UserAlerts>> GetAlerts([FromQuery] string userid, [FromHeader] string userToken)
         {
             try
             {
+                if (!_certificateAuthentication.CheckIfUserTokenIsValid(userid, userToken))
+                {
+                    return new Response<List<UserAlerts>>
+                    {
+                        IsSuccess = false,
+                        Code = 401,
+                        Error = "No access"
+                    };
+                }
+
                 var theFilter = Builders<UserAlerts>.Filter.Or(Builders<UserAlerts>.Filter.Eq(user => user.UserId, userid), Builders<UserAlerts>.Filter.Eq(user => user.UserId, "GENERAL_MSG"));
                 var data = _dbContext.UserAlerts.FindSync<UserAlerts>(theFilter).ToList().OrderByDescending(c => c.TimeStamp).ToList();
 

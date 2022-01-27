@@ -1,9 +1,9 @@
-﻿using Sayuru.Mobile.API.Data.Interfaces;
+﻿using Sayuru.Mobile.API.Interfaces;
 using System;
 using System.Collections.Generic;
 using System.Text;
 
-namespace Sayuru.Mobile.API.Data.Settings
+namespace Sayuru.Mobile.API.Settings
 {
     public class DatabaseSettings : IDatabaseSettings
     {

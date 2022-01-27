@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Text;
 
-namespace Sayuru.Mobile.API.Data.Interfaces
+namespace Sayuru.Mobile.API.Interfaces
 {
     public interface IDatabaseSettings
     {

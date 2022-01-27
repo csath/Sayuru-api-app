@@ -1,6 +1,6 @@
 ﻿using FirebaseAdmin.Messaging;
-using Sayuru.Mobile.API.Data.Interfaces;
-using Sayuru.Mobile.API.Data.Models;
+using Sayuru.Mobile.API.Interfaces;
+using Sayuru.Mobile.API.Models;
 using System;
 using System.Threading.Tasks;
 

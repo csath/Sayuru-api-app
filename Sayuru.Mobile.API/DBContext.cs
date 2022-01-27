@@ -1,11 +1,11 @@
 ﻿using MongoDB.Driver;
-using Sayuru.Mobile.API.Data.Interfaces;
-using Sayuru.Mobile.API.Data.Models;
+using Sayuru.Mobile.API.Interfaces;
+using Sayuru.Mobile.API.Models;
 using System;
 using System.Collections.Generic;
 using System.Text;
 
-namespace Sayuru.Mobile.API.Data
+namespace Sayuru.Mobile.API
 {
     public class DBContext : IDBContext
     {

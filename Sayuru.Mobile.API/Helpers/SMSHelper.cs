@@ -1,4 +1,4 @@
-﻿using Sayuru.Mobile.API.Data.Interfaces;
+﻿using Sayuru.Mobile.API.Interfaces;
 using System;
 using System.Collections.Generic;
 using System.Linq;

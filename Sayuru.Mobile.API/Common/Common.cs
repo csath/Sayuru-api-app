@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Text;
 
-namespace Sayuru.Mobile.API.Data.Common
+namespace Sayuru.Mobile.API.Common
 {
     public class Location
     {

@@ -7,9 +7,9 @@ using MongoDB.Bson;
 using MongoDB.Driver;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
-using Sayuru.Mobile.API.Data.Common;
-using Sayuru.Mobile.API.Data.Interfaces;
-using Sayuru.Mobile.API.Data.Models;
+using Sayuru.Mobile.API.Common;
+using Sayuru.Mobile.API.Interfaces;
+using Sayuru.Mobile.API.Models;
 using Sayuru.Mobile.API.Helpers;
 
 namespace Sayuru.Mobile.API.Controllers
@@ -130,6 +130,40 @@ namespace Sayuru.Mobile.API.Controllers
         }
 
         #endregion
+
+        [HttpPost("account/status")]
+        public Response<AccountStatus> GetAccountFreeTrialStatus([FromBody] UserData userData)
+        {
+            try
+            {
+                var res = _ivrAPI.GetAccountStatus(userData.MobileNumber);
+
+                if (res == null)
+                {
+                    return new Response<AccountStatus>
+                    {
+                        IsSuccess = false,
+                        Code = 400,
+                        Error = "Unable to fetch data"
+                    };
+                }
+
+                return new Response<AccountStatus>
+                {
+                    Data = res
+                };
+            }
+            catch (Exception ex)
+            {
+                _logger.Log(exception: ex);
+                return new Response<AccountStatus>
+                {
+                    IsSuccess = false,
+                    Code = 400,
+                    Error = "Unable to fetch data"
+                };
+            }
+        }
 
     }
 }

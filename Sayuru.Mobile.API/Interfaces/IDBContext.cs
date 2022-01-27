@@ -1,10 +1,10 @@
 ﻿using MongoDB.Driver;
-using Sayuru.Mobile.API.Data.Models;
+using Sayuru.Mobile.API.Models;
 using System;
 using System.Collections.Generic;
 using System.Text;
 
-namespace Sayuru.Mobile.API.Data.Interfaces
+namespace Sayuru.Mobile.API.Interfaces
 {
     public interface IDBContext
     {

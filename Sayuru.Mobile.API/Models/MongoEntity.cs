@@ -4,7 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 
-namespace Sayuru.Mobile.API.Data.Models
+namespace Sayuru.Mobile.API.Models
 {
     public class MongoEntity
     {

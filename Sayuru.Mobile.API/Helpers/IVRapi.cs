@@ -1,6 +1,6 @@
 ﻿using Newtonsoft.Json;
-using Sayuru.Mobile.API.Data.Common;
-using Sayuru.Mobile.API.Data.Interfaces;
+using Sayuru.Mobile.API.Common;
+using Sayuru.Mobile.API.Interfaces;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -225,9 +225,10 @@ namespace Sayuru.Mobile.API.Helpers
                 var data = new
                 {
                     number = phoneNo,
-                    otp = GenerateOTP()
+                    otp = $"{GenerateOTP()}"
                 };
-                var stringContent = new StringContent(data.ToString());
+                var jsonString = JsonConvert.SerializeObject(data);
+                var stringContent = new StringContent(jsonString, Encoding.UTF8, "application/json");
 
                 using (var client = new HttpClient())
                 {
@@ -247,7 +248,7 @@ namespace Sayuru.Mobile.API.Helpers
 
                     if (response.IsSuccessStatusCode && res.ResultCode == 0)
                     {
-                        return data.otp;
+                        return Int32.Parse(data.otp);
                     }
                 }
 
@@ -324,5 +325,16 @@ namespace Sayuru.Mobile.API.Helpers
                 return sb.ToString().ToLower();
             }
         }
+
+        public AccountStatus GetAccountStatus(long mobile)
+        {
+            // need to call dialog api and get valies
+
+            return new AccountStatus
+            {
+                isPremiumAccount = true, // hardcoded this as true to remove the trial accounts
+                remainingFreeTrialDays = 15,
+            };
+    }
     }
 }

@@ -1,11 +1,11 @@
 ﻿using MongoDB.Bson;
 using MongoDB.Bson.Serialization.Attributes;
-using Sayuru.Mobile.API.Data.Common;
+using Sayuru.Mobile.API.Common;
 using System;
 using System.Collections.Generic;
 using System.Text;
 
-namespace Sayuru.Mobile.API.Data.Models
+namespace Sayuru.Mobile.API.Models
 {
     public class UserData : MongoEntity
     {
@@ -24,6 +24,7 @@ namespace Sayuru.Mobile.API.Data.Models
         public bool IsActive { get; set; } = false;
         public bool HasRegisteredIVR { get; set; } = false;
         public string FishermanLicenseStatus { get; set; }
+        public string UserToken { get; set; }
     }
 
     public class District

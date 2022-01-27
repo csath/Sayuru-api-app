@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 
-namespace Sayuru.Mobile.API.Data.Common
+namespace Sayuru.Mobile.API.Common
 {
     public class RegisterRes
     {
@@ -69,5 +69,11 @@ namespace Sayuru.Mobile.API.Data.Common
         public string District { get; set; }
         public string OtherName { get; set; }
         public string ApplicantName { get; set; }
+    }
+
+    public class AccountStatus
+    {
+        public bool isPremiumAccount { get; set; }
+        public int remainingFreeTrialDays { get; set; }
     }
 }
